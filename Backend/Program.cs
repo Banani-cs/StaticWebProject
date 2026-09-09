@@ -20,7 +20,7 @@ app.MapPost("/currency", (CurrencyRequest request) =>
     return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
 });
 
-app.MapGet("/currency/{name}", (string name) =>
+app.MapGet("/currency/{name}/info", (string name) =>
 {
     if (!currencyDict.TryGetValue(name, out int count))
     {
@@ -28,8 +28,18 @@ app.MapGet("/currency/{name}", (string name) =>
     }
     return TypedResults.Ok(new { Name = name, CurrencyCount = count });
 });
+
+app.MapPut("/currency/{name}/update", (string name) =>
+{
+    if (currencyDict.ContainsKey(name))
+    {
+        currencyDict[name] = 1000;
+        return TypedResults.Ok(new { Name = name, CurrencyCount = currencyDict[name] });
+    }
+    return Results.NotFound(new { Message = $"Currency '{name}' not found." });
+});
 app.Run();
 public class CurrencyRequest
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 }
