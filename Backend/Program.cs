@@ -9,6 +9,11 @@ Dictionary<string, int> currencyDict = new Dictionary<string, int>();
 
 app.MapPost("/currency", (CurrencyRequest request) =>
 {
+    if (request == null || string.IsNullOrWhiteSpace(request.Name))
+    {
+        return Results.BadRequest(new { Message = "Invalid request. 'Name' is required." });
+    }
+    else
     {
         if (currencyDict.ContainsKey(request.Name))
         {
@@ -21,6 +26,20 @@ app.MapPost("/currency", (CurrencyRequest request) =>
     }
     return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
 });
+
+app.MapPost("currency/spend", (CurrencyRequest request) =>
+{
+    if (currencyDict.ContainsKey(request.Name) && currencyDict[request.Name] >= 5)
+    {
+        currencyDict[request.Name] -= 5;
+        return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
+    }
+    else
+    {
+        return Results.BadRequest(new { Message = $"Insufficient currency for '{request.Name}' or currency not found." });
+    }
+});
+
 
 app.MapGet("/currency/{name}/info", (string name) =>
 {
