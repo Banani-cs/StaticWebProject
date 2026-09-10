@@ -9,13 +9,15 @@ Dictionary<string, int> currencyDict = new Dictionary<string, int>();
 
 app.MapPost("/currency", (CurrencyRequest request) =>
 {
-    if (currencyDict.ContainsKey(request.Name))
     {
-        currencyDict[request.Name]++;
-    }
-    else
-    {
-        currencyDict[request.Name] = 1;
+        if (currencyDict.ContainsKey(request.Name))
+        {
+            currencyDict[request.Name]++;
+        }
+        else
+        {
+            currencyDict[request.Name] = 1;
+        }
     }
     return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
 });
@@ -27,6 +29,11 @@ app.MapGet("/currency/{name}/info", (string name) =>
         return Results.NotFound(new { Message = $"Currency '{name}' not found." });
     }
     return TypedResults.Ok(new { Name = name, CurrencyCount = count });
+});
+
+app.MapGet("/currency/return_all", () =>
+{
+    return TypedResults.Ok(currencyDict.Select(kvp => new { Name = kvp.Key, CurrencyCount = kvp.Value }));
 });
 
 app.MapPut("/currency/{name}/update", (string name) =>
