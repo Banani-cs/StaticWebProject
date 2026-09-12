@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
-Dictionary<string, int> currencyDict = new Dictionary<string, int>();
+Dictionary<string, int> currencyDict = new();
 
 app.MapPost("/currency", (CurrencyRequest request) =>
 {
@@ -13,30 +13,41 @@ app.MapPost("/currency", (CurrencyRequest request) =>
     {
         return Results.BadRequest(new { Message = "Invalid request. 'Name' is required." });
     }
-    else
+
+    string cleanName = request.Name.Trim();
+
     {
-        if (currencyDict.ContainsKey(request.Name))
+        if (currencyDict.TryGetValue(cleanName, out int count))
         {
-            currencyDict[request.Name]++;
+            currencyDict[cleanName]++;
         }
         else
         {
-            currencyDict[request.Name] = 1;
+            currencyDict[cleanName] = 1;
         }
     }
-    return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
+    return TypedResults.Ok(new { Name = cleanName, CurrencyCount = currencyDict[cleanName] });
 });
 
-app.MapPost("currency/spend", (CurrencyRequest request) =>
+app.MapPost("/currency/spend", (CurrencyRequest request, int amount) =>
 {
-    if (currencyDict.ContainsKey(request.Name) && currencyDict[request.Name] >= 5)
+    if (amount < 0)
     {
-        currencyDict[request.Name] -= 5;
+        return Results.BadRequest(new { Message = "Amount to spend must be greater than or equal to 0." });
+    }
+
+    if (!currencyDict.ContainsKey(request.Name))
+    {
+        return Results.NotFound(new { Message = $"User with '{request.Name}' not found." });
+    }
+    if (currencyDict.TryGetValue(request.Name, out int count) && count >= amount)
+    {
+        currencyDict[request.Name] -= amount;
         return TypedResults.Ok(new { Name = request.Name, CurrencyCount = currencyDict[request.Name] });
     }
     else
     {
-        return Results.BadRequest(new { Message = $"Insufficient currency for '{request.Name}' or currency not found." });
+        return Results.BadRequest(new { Message = $"Insufficient currency for '{request.Name}'" });
     }
 });
 
@@ -50,9 +61,14 @@ app.MapGet("/currency/{name}/info", (string name) =>
     return TypedResults.Ok(new { Name = name, CurrencyCount = count });
 });
 
-app.MapGet("/currency/return_all", () =>
+app.MapGet("/currency/return_all_users", () =>
 {
-    return TypedResults.Ok(currencyDict.Select(kvp => new { Name = kvp.Key, CurrencyCount = kvp.Value }));
+    return TypedResults.Ok(currencyDict.Select(kvp => new { Name = kvp.Key }));
+});
+
+app.MapGet("/currency/return_all_currency", () =>
+{
+    return TypedResults.Ok(currencyDict.Select(kvp => new { CurrencyCount = kvp.Value }));
 });
 
 app.MapPut("/currency/{name}/update", (string name) =>
