@@ -5,7 +5,7 @@ public class User
 {
     public int Id { get; set; }
     public required string Name { get; set; }
-    public int currency { get; set; }
+    public int Currency { get; set; }
 
     public int ClickPower { get; set; }
 
